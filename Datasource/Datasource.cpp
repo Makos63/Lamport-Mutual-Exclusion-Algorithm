@@ -9,11 +9,16 @@
 #include <fstream>
 #include <sstream>
 #include <utility>
+#include <thread>
 
 
-void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg;
+void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg);
+
 void on_connect(struct mosquitto *mosq, void *obj, int rc);
+
 void subscriber(std::string brokerIP);
+
+Datasource *myDatasource;
 
 int main(int argc, char *argv[]) {
     std::string destIP, file, id;
@@ -26,21 +31,22 @@ int main(int argc, char *argv[]) {
     id = argv[3];
     //std::cout << file << std::endl;
 
+    std::string topic = "Lamports";
 
-    Datasource *myDatasource = new Datasource(destIP, id);
+    myDatasource = new Datasource(destIP, id, topic);
     myDatasource->readcsv(file);
-    myDatasource->run();
+//    myDatasource->run();
+    std::thread pubThread(&Datasource::run, myDatasource);
 
+    subscriber(myDatasource->getDestIp());
+
+    pubThread.join();
 }
 
 std::string Datasource::getCurrentTimestamp() {
-    std::array<char, 64> buffer = {0};
-    time_t rawtime;
-    time(&rawtime);
-    const auto timeinfo = localtime(&rawtime);
-    strftime(buffer.data(), sizeof(buffer), "%d-%m-%Y %H:%M:%S", timeinfo);
-    std::string timeStr(buffer.data());
-    return timeStr;
+    std::time_t result = std::time(nullptr);
+    //std::cout << std::asctime(std::localtime(&result)) << result << " seconds since the Epoch\n";
+    return reinterpret_cast<const char *>(result);
 }
 
 void Datasource::readcsv(const std::string &file) {
@@ -69,104 +75,144 @@ void Datasource::readcsv(const std::string &file) {
     }
 }
 
-Datasource::Datasource(std::string destIPn, std::string idn) {
+Datasource::Datasource(std::string destIPn, std::string idn, std::string topicn) {
     csvArgs = new std::vector<Line *>;
     destIP = std::move(destIPn);
     id = std::move(idn);
+    topic = std::move(topicn);
+    mqttName = "Datasource-" + id;
+    queue = new std::queue<queueLine *>;
+    clock = 0;
 }
 
 void Datasource::run() {
-    std::string mqttName = "Datasource-" + id;
-    std::string topic = "Lamports";
+
     int rc;
     struct mosquitto *mosq;
 
-    while (true) {
-        try {
+    //subscriber(destIP);
 
 
-            std::cout << "starting: " << mqttName << std::endl;
 
-            mosquitto_lib_init();
-            mosq = mosquitto_new(mqttName.c_str(), true, NULL);
 
-            rc = mosquitto_connect(mosq, destIP.c_str(), 1883, 60);
-            //check if connection is successful. if so = 0, if not !=0
-            if (rc != 0) {
-                mosquitto_destroy(mosq);
-                throw "Client could not connect to broker!";
-            }
 
-            for (int i = 0; i < csvArgs->size(); ++i) {
-                Line *currentLine = csvArgs->at(i);
 
-                sleep(currentLine->sleepTime);
 
-                std::string message;
-                for (int i = 0; i < currentLine->fileSize; ++i) {
-                    message += "a";
-                }
 
-                mosquitto_publish(mosq, NULL, topic.c_str(), message.length(), message.c_str(), 0, false);
 
-            }
-        } catch (char const *c) {
-            std::cout << "failed with: " << std::endl;
-            std::cout << c << std::endl;
-            std::cout << "restarting datasource" << std::endl;
-            mosq = mosquitto_new(mqttName.c_str(), true, NULL);
-            sleep(5);
+
+
+    try {
+
+
+        std::cout << "starting: " << mqttName << std::endl;
+
+        mosquitto_lib_init();
+        mosq = mosquitto_new(mqttName.c_str(), true, NULL);
+
+        rc = mosquitto_connect(mosq, destIP.c_str(), 1883, 60);
+        //check if connection is successful. if so = 0, if not !=0
+        if (rc != 0) {
+            mosquitto_destroy(mosq);
+            throw "Client could not connect to broker!";
         }
+        std::string message = "";
+        for (int i = 0; i < csvArgs->size(); ++i) {
+            Line *currentLine = csvArgs->at(i);
+
+            sleep(currentLine->sleepTime);
 
 
+            requestToEnter();
+            message = std::to_string(queue->front()->clock) + queue->front()->process + queue->front()->method;
+            mosquitto_publish(mosq, NULL, topic.c_str(), message.length(), message.c_str(), 0, false);
+
+            if (allowedToEnter()) {
+                /*send to datastore
+bool transferComplete = false;
+std::cout << "transferring data to provider" << std::endl;
+while (!transferComplete) {
+    std::cout <<"trying..."<< std::endl;
+    try {
+        if (!myCentral->TransferDataRPC(type, data, timestamp,centralID)) {
+            throw "gRPC failed while connecting to provider";
+        } else {
+            transferComplete = true;
+            std::cout <<"Transfer succeed"<<std::endl;
+        }
+    } catch (char const *c) {
+        std::cout << c << std::endl;
+        std::cout << "Trying next provider.. " << std::endl;
+        std::cout << "using following provider: " << myCentral->getNextProvider() << std::endl;
     }
+}*/
+            }
+            release();
+        }
+    } catch (char const *c) {
+        std::cout << "failed with: " << std::endl;
+        std::cout << c << std::endl;
+    }
+
 }
 
 Datasource::Datasource() {
 
 }
 
+std::vector<Line *> *Datasource::getCsvArgs() const {
+    return csvArgs;
+}
+
+const std::string &Datasource::getDestIp() const {
+    return destIP;
+}
+
+const std::string &Datasource::getId() const {
+    return id;
+}
+
+const std::string &Datasource::getMqttName() const {
+    return mqttName;
+}
+
+const std::string &Datasource::getTopic() const {
+    return topic;
+}
+
+Datasource::~Datasource() {
+
+}
+
+void Datasource::requestToEnter() {
+    ++clock;
+    queueLine *ql = new queueLine();
+    ql->clock = clock;
+    ql->method = "Enter";
+    ql->process = id;
+    queue->push(ql);
+}
+
+void Datasource::allowToEnter() {
+
+}
+
+void Datasource::release() {
+
+}
+
+bool Datasource::allowedToEnter() {
+    return false;
+}
+
+void Datasource::receive() {
+
+}
+
 void on_message(struct mosquitto *mosq, void *obj, const struct mosquitto_message *msg) {
     printf("New message with topic %s: %s\n", msg->topic, (char *) msg->payload);
-    //std::cout << "Message" << std::endl;
-    //get topic and the payload of the mosquitto message
-    //std::cout << "Topic: " << msg->topic << std::endl;
-    //std::cout << "Message: " << (char *) msg->payload << std::endl;
 
 
-    std::string tmp((char *) msg->payload);
-    std::stringstream dataS(tmp);
-    std::string type, data, senIP, timestamp;
-
-    //split the payload (string) into the values with delimiter
-    std::getline(dataS, type, '|');
-    std::getline(dataS, data, '|');
-    std::getline(dataS, senIP, '|');
-    std::getline(dataS, timestamp);
-    sensorDataMap.find(type)->second->addData(data, timestamp, senIP);
-
-    //saves timestamp for sensorStatus calculation
-    sensorTimes->find(type)->second=timestamp;
-
-    //data transfer to provider. if it fails because provider is down -> test next provider.
-    //try for so long until data is send successfully
-    bool transferComplete = false;
-    std::cout << "transferring data to provider" << std::endl;
-    while (!transferComplete) {
-        std::cout <<"trying..."<< std::endl;
-        try {
-            if (!myCentral->TransferDataRPC(type, data, timestamp,centralID)) {
-                throw "gRPC failed while connecting to provider";
-            } else {
-                transferComplete = true;
-                std::cout <<"Transfer succeed"<<std::endl;
-            }
-        } catch (char const *c) {
-            std::cout << c << std::endl;
-            std::cout << "Trying next provider.. " << std::endl;
-            std::cout << "using following provider: " << myCentral->getNextProvider() << std::endl;
-        }
-    }
 }
 
 //test for connection and connect, if successful
@@ -177,19 +223,19 @@ void on_connect(struct mosquitto *mosq, void *obj, int rc) {
         exit(-1);
     }
     //clientobj, messageid, topic, quality for service level
-    mosquitto_subscribe(mosq, NULL, centralTopic.c_str(), 0);
+    mosquitto_subscribe(mosq, NULL, myDatasource->getTopic().c_str(), 0);
 }
 
 
 void subscriber(std::string brokerIP) {
-    int rc, id = std::stoi(centralID);
+    int rc, id = std::stoi(myDatasource->getId());
 
     mosquitto_lib_init();
     //client obj struct
     struct mosquitto *mosq;
     //create object
     //clientname, clean session, subscriber id
-    std::string t = "sub-" + centralID;
+    std::string t = myDatasource->getMqttName();
     mosq = mosquitto_new(t.c_str(), true, &id);
 
     //void (Central::*func)(struct mosquitto *, void *, int );
