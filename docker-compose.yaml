@@ -1,0 +1,40 @@
+version: '3.7'
+
+services:
+  mosquitto:
+    image: eclipse-mosquitto
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./MqttBroker/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    networks:
+      myNetwork:
+        ipv4_address: 172.20.0.100
+
+
+  ds1:
+    build:
+      context: Datasource
+      dockerfile: dockerDatasource
+    environment:
+      DesIP: 172.20.0.100
+      Csv: config.csv
+      id: 1
+    networks:
+      myNetwork:
+        ipv4_address: 172.20.0.150
+
+
+  datastore:
+    image: mbredel/datastore:latest
+    networks:
+      myNetwork:
+        ipv4_address: 172.20.0.10
+
+
+networks:
+  myNetwork:
+    name: myNetwork
+    ipam:
+      config:
+        - subnet: 172.20.0.0/22

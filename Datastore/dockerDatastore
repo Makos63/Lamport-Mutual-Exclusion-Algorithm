@@ -1,0 +1,1 @@
+FROM mbredel/datastore:latest
