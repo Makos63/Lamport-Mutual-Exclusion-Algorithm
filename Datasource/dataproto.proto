@@ -1,0 +1,97 @@
+syntax = "proto3";
+
+package dataproto;
+
+/*
+ * The resource that is stored at the
+ * server.
+ */
+message Resource {
+  int32 id = 1;
+  string name = 2;
+  int32 size = 3;
+  string description = 4;
+}
+
+/*
+ * A container containing multiple resources
+ */
+message Resources {
+  repeated Resource resource = 1;
+}
+
+/*
+ * Request messages needed for plain
+ * TCP-ProtoBuf implementations. It
+ * contains the actual request
+ * messages.
+ */
+message Request {
+  oneof messageBody {
+    Resource resource = 1;
+    ResourceRequest resourceReq = 2;
+    ResourcesRequest resourcesReq = 3;
+    HealthCheckRequest healthCheckReq = 4;
+  }
+}
+
+/*
+ * The resource request message contains
+ * the ID of the requested resource.
+ */
+message ResourceRequest {
+  int32 id = 1;
+}
+
+/*
+ * Requests all resources.
+ */
+message ResourcesRequest {
+}
+
+/*
+ * Requests a health check.
+ */
+message HealthCheckRequest {
+}
+
+/*
+ * The reply messages. Similar to
+ * HTTP-messages, it contains a
+ * status code, a description, and
+ * optionally a message body.
+ */
+message Reply {
+  int32 status = 1;
+  string description = 2;
+  oneof messageBody {
+    Resource resource = 3;
+    Resources resources = 4;
+  }
+}
+
+/*
+ * The service description for gRPC.
+ */
+service Service1 {
+
+  /*
+   * Stores a resource.
+   */
+  rpc storeData (Resource) returns (Reply) {}
+
+  /*
+   * Returns a single resource.
+   */
+  rpc getData (ResourceRequest) returns (Resource) {}
+
+  /*
+   * Returns all resources.
+   */
+  rpc listData (ResourcesRequest) returns (stream Resource) {}
+
+  /*
+   * Returns health check information.
+   */
+  rpc healthCheck (HealthCheckRequest) returns (Reply) {}
+}

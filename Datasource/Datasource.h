@@ -12,6 +12,7 @@
 #include <queue>
 #include <algorithm>
 #include <mutex>
+#include "grpcClient.h"
 
 struct Line {
     int sleepTime;
@@ -33,7 +34,7 @@ private:
     std::vector<Line *> *csvArgs;
     std::string destIP;
     int messCounter=0;
-
+    GrpcClient *myClient;
 
     int clock;
     std::vector<queueLine *> *queue;

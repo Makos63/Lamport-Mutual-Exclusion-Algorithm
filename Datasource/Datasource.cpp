@@ -96,13 +96,17 @@ Datasource::Datasource(std::string destIPn, std::string idn, std::string topicn,
     clock = 0;
     ackCounter = 0;
     sourceCount = std::stoi(count);
+    myClient = new GrpcClient(
+            grpc::CreateChannel(
+                    "172.20.0.10:8080",
+                    grpc::InsecureChannelCredentials()
+            )
+    );
 
 }
 
 void Datasource::run() {
-
     try {
-
         std::cout << "publisher thread: " << mqttName << " with Topic: " << topic << std::endl;
         //sleep(std::stoi(id));
         for (int i = 5; i > 0; i--) {
@@ -126,24 +130,10 @@ void Datasource::run() {
 
                 sleep(1);
                 if (allowedToEnter()) {
-                    /*send to datastore
-    bool transferComplete = false;
-    std::cout << "transferring data to provider" << std::endl;
-    while (!transferComplete) {
-        std::cout <<"trying..."<< std::endl;
-        try {
-            if (!myCentral->TransferDataRPC(type, data, timestamp,centralID)) {
-                throw "gRPC failed while connecting to provider";
-            } else {
-                transferComplete = true;
-                std::cout <<"Transfer succeed"<<std::endl;
-            }
-        } catch (char const *c) {
-            std::cout << c << std::endl;
-            std::cout << "Trying next provider.. " << std::endl;
-            std::cout << "using following provider: " << myCentral->getNextProvider() << std::endl;
-        }
-    }*/
+                    Reply myReply = myClient->storeData(id, std::to_string(currentLine->fileSize), std::to_string(currentLine->fileSize), "hey some message");
+
+                    std::cout<< "Status: "<<myReply.status() <<"|Description: "<<myReply.description()<<std::endl;
+
                     isItDone = true;
                     release();
                     printVector();
@@ -333,7 +323,7 @@ void Datasource::receive(std::string recMessage) {
         ++messCounter;
         printVector();
     } else if (event == "ACK") {
-        if ( destOpt==id){
+        if (destOpt == id) {
             std::cout << "Got ACK for me! incrementing clock" << std::endl;
             ++ackCounter;
             ++messCounter;
@@ -360,8 +350,8 @@ void Datasource::receive(std::string recMessage) {
     };
     if (queue->size() > 0) {
         std::sort(queue->begin(), queue->end(), sortRuleLambda);
-    }else{
-        std::cout<< "nothing to sort.."<<std::endl;
+    } else {
+        std::cout << "nothing to sort.." << std::endl;
     }
     //g_mutex.unlock();
 }
@@ -374,7 +364,7 @@ void Datasource::printVector() {
     std::cout << "Current clock: " << clock << std::endl;
     std::cout << "Current ACK count: " << ackCounter << std::endl;
     std::cout << "Current message counter: " << messCounter << std::endl;
-    std::cout << "Current 3*(N-1): " << messCounter-(3*1) << std::endl;
+    std::cout << "Current 3*(N-1): " << messCounter - (3 * 1) << std::endl;
 
 
 }

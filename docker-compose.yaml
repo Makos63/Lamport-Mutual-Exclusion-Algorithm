@@ -100,9 +100,16 @@ services:
       - mosquitto
 
 
-
   datastore:
-    image: mbredel/datastore:latest
+    image: mbredel/datastore:cpp
+    ports:
+      - 8080:8080
+      - 9090:9090
+      - 6543:6543
+    environment:
+      - 'THRIFT_PORT:9090'
+      - 'GRPC_PORT:8080'
+      - 'PROTO_PORT:6543'
     networks:
       myNetwork:
         ipv4_address: 172.20.0.10

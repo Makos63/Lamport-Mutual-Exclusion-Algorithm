@@ -1,9 +1,10 @@
-FROM gcc:9.2
+FROM makos63/firstimage:latest
 ENV DesIP "$DesIP"
 ENV Csv "$Csv"
 ENV id "$id"
 ENV sourceCount "$sourceCount"
 RUN apt-get update && apt-get upgrade -y && apt-get install cmake -y
+
 RUN apt-get install --reinstall pkg-config cmake-data -y
 RUN apt-get install libmosquitto-dev libmosquittopp-dev libssl-dev -y
 
