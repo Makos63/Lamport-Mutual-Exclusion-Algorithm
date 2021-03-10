@@ -93,7 +93,7 @@ Datasource::Datasource(std::string destIPn, std::string idn, std::string topicn,
     //mqttName = "Datasource-" + id;
     mqttName = id;
     queue = new std::vector<queueLine *>;
-    clock = 1;
+    clock = 0;
     ackCounter = 0;
     sourceCount = std::stoi(count);
 
@@ -109,6 +109,7 @@ void Datasource::run() {
             std::cout << "starting in: " << i << std::endl;
             sleep(1);
         }
+        int doneWith = 0;
         for (int i = 0; i < csvArgs->size(); i++) {
             std::cout << "----------------new request------------------" << std::endl;
 
@@ -152,8 +153,67 @@ void Datasource::run() {
 
             }
 
-            std::cout << "finished request count:" << i << "..." << std::endl;
+            std::cout << "finished request count:" << doneWith << "..." << std::endl;
+            ++doneWith;
         }
+        /*loop some more
+        std::cout << "loop some more: 2nd" << std::endl;
+        for (int i = 0; i < csvArgs->size(); i++) {
+            std::cout << "----------------new request------------------" << std::endl;
+
+            Line *currentLine = csvArgs->at(i);
+
+            sleep(currentLine->sleepTime);
+            printVector();
+
+            requestToEnter();
+
+            bool isItDone = false;
+
+            while (!isItDone) {
+
+                sleep(1);
+                if (allowedToEnter()) {
+
+                    isItDone = true;
+                    release();
+                    printVector();
+                }
+
+            }
+
+            std::cout << "finished request count:" << doneWith << "..." << std::endl;
+            ++doneWith;
+        }
+        std::cout << "loop some more: 3nd" << std::endl;
+        for (int i = 0; i < csvArgs->size(); i++) {
+            std::cout << "----------------new request------------------" << std::endl;
+
+            Line *currentLine = csvArgs->at(i);
+
+            sleep(currentLine->sleepTime);
+            printVector();
+
+            requestToEnter();
+
+            bool isItDone = false;
+
+            while (!isItDone) {
+
+                sleep(1);
+                if (allowedToEnter()) {
+
+                    isItDone = true;
+                    release();
+                    printVector();
+                }
+
+            }
+
+            std::cout << "finished request count:" << doneWith << "..." << std::endl;
+            ++doneWith;
+        }
+        std::cout << "done with looping" << std::endl;*/
     } catch (char const *c) {
         std::cout << "failed with: " << std::endl;
         std::cout << c << std::endl;
@@ -190,44 +250,53 @@ Datasource::~Datasource() {
 }
 
 void Datasource::requestToEnter() {
+    g_mutex.try_lock();
     std::cout << "Sending broadcast REQ" << std::endl;
     ++clock;
 
-    queueLine *ql = new queueLine();
+    /*queueLine *ql = new queueLine();
     ql->clock = clock;
     ql->process = mqttName;
     queue->push_back(ql);
-    std::string message = std::to_string(queue->front()->clock) + "|" + queue->front()->process + "|" + "REQ" + "|";
+    */
+    std::string message = std::to_string(clock) + "|" + id + "|" + "REQ" + "|";
     publish(message);
-
+    g_mutex.unlock();
 }
 
 void Datasource::allowToEnter(std::string requester) {
+    g_mutex.try_lock();
     //std::cout << "Sending ACK to: " << requester << std::endl;
     ++clock;
     std::string message =
             std::to_string(queue->front()->clock) + "|" + queue->front()->process + "|" + "ACK" + "|" + requester + "|";
     publish(message);
     //std::cout << "published ACK to: " << requester << std::endl;
+    g_mutex.unlock();
 }
 
 void Datasource::release() {
     //std::cout << "Sending REL" << std::endl;
+    g_mutex.try_lock();
     ++clock;
-    ackCounter = 0;
+    //ackCounter = 0;
     std::string message =
-            std::to_string(queue->front()->clock) + "|" + queue->front()->process + "|" + "REL" + "|";
+            std::to_string(queue->front()->clock) + "|" + queue->front()->process + "|" + "REL" + "|" + id + "|";
     publish(message);
+    g_mutex.unlock();
 }
 
 bool Datasource::allowedToEnter() {
 
-
+    g_mutex.try_lock();
     auto t = queue[0].front();
-    if (t->process == mqttName && ackCounter >= sourceCount) {
+    if (t->process == mqttName && ackCounter == sourceCount) {
         std::cout << "i am allowed to enter" << std::endl;
+        ackCounter = 0;
+        g_mutex.unlock();
         return true;
     }
+    g_mutex.unlock();
     return false;
 
 
@@ -236,7 +305,7 @@ bool Datasource::allowedToEnter() {
 
 void Datasource::receive(std::string recMessage) {
     //PROCCLOCK|PROCID|EVENTTYP|REQUESTER
-    std::string clockStr, procId, event, destOpt;
+    std::string clockStr, procId, event, destOpt, rel;
     std::istringstream iss(recMessage);
     getline(iss, clockStr, '|');
     getline(iss, procId, '|');
@@ -244,27 +313,36 @@ void Datasource::receive(std::string recMessage) {
     if (event == "ACK") {
         getline(iss, destOpt, '|');
     }
-
+    if (event == "REL") {
+        getline(iss, rel, '|');
+    }
     auto t = std::max(clock, std::stoi(clockStr));
     clock = t + 1;
+    g_mutex.try_lock();
 
+    if (event == "REQ") {
 
-    if (event == "REQ" && procId != id) {
         queueLine *ql = new queueLine();
         ql->clock = clock;
         ql->process = procId;
         queue->push_back(ql);
         allowToEnter(procId);
+        ++messCounter;
         printVector();
-    } else if (event == "ACK") {
+    } else if (event == "ACK" && destOpt==id) {
         std::cout << "Got ACK for me! incrementing clock" << std::endl;
         ++ackCounter;
+        ++messCounter;
         printVector();
-    } else if (event == "REL") {
-        queue->erase(queue->begin());
-        printVector();
-    }
 
+    } else if (event == "REL") {
+        if (queue->at(0)->process == rel) {
+            ++messCounter;
+            queue->erase(queue->begin());
+            printVector();
+
+        }
+    }
 
 
     auto sortRuleLambda = [](queueLine *s1, queueLine *s2) -> bool {
@@ -275,7 +353,10 @@ void Datasource::receive(std::string recMessage) {
     };
     if (queue->size() > 0) {
         std::sort(queue->begin(), queue->end(), sortRuleLambda);
+    }else{
+        std::cout<< "nothing to sort.."<<std::endl;
     }
+    g_mutex.unlock();
 }
 
 void Datasource::printVector() {
@@ -285,6 +366,10 @@ void Datasource::printVector() {
     }
     std::cout << "Current clock: " << clock << std::endl;
     std::cout << "Current ACK count: " << ackCounter << std::endl;
+    std::cout << "Current message counter: " << messCounter << std::endl;
+    std::cout << "Current 3*(N-1): " << messCounter-(3*1) << std::endl;
+
+
 }
 
 

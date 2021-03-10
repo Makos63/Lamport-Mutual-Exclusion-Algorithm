@@ -11,6 +11,7 @@
 #include <mosquitto.h>
 #include <queue>
 #include <algorithm>
+#include <mutex>
 
 struct Line {
     int sleepTime;
@@ -22,6 +23,8 @@ struct queueLine {
     std::string process;
 };
 
+std::mutex g_mutex;
+
 class Datasource {
 private:
     std::string id;
@@ -29,6 +32,8 @@ private:
     std::string topic;
     std::vector<Line *> *csvArgs;
     std::string destIP;
+    int messCounter=0;
+
 
     int clock;
     std::vector<queueLine *> *queue;
