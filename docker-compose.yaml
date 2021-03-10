@@ -9,7 +9,7 @@ services:
       - ./MqttBroker/mosquitto.conf:/mosquitto/config/mosquitto.conf
     networks:
       myNetwork:
-        ipv4_address: 172.20.0.100
+        ipv4_address: 172.20.0.110
 
 
   ds1:
@@ -17,12 +17,29 @@ services:
       context: Datasource
       dockerfile: dockerDatasource
     environment:
-      DesIP: 172.20.0.100
+      DesIP: 172.20.0.110
       Csv: config.csv
       id: 1
+      sourceCount: 2
     networks:
       myNetwork:
         ipv4_address: 172.20.0.150
+    depends_on:
+      - mosquitto
+  ds2:
+    build:
+      context: Datasource
+      dockerfile: dockerDatasource
+    environment:
+      DesIP: 172.20.0.110
+      Csv: config.csv
+      id: 2
+      sourceCount: 2
+    networks:
+      myNetwork:
+        ipv4_address: 172.20.0.151
+    depends_on:
+      - mosquitto
 
 
   datastore:

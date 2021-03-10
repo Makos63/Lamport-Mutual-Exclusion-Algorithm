@@ -10,41 +10,44 @@
 #include <vector>
 #include <mosquitto.h>
 #include <queue>
+#include <algorithm>
 
 struct Line {
     int sleepTime;
     int fileSize;
 };
 
-struct queueLine{
+struct queueLine {
     int clock;
     std::string process;
-    std::string method;
 };
 
 class Datasource {
+private:
+    std::string id;
+    std::string mqttName;
+    std::string topic;
+    std::vector<Line *> *csvArgs;
+    std::string destIP;
+
+    int clock;
+    std::vector<queueLine *> *queue;
+    int ackCounter;
+    int sourceCount;
 public:
     Datasource();
 
-    Datasource(std::string destIPn, std::string idn, std::string topicn);
+    Datasource(std::string destIPn, std::string idn, std::string topicn,std::string count);
 
     std::string getCurrentTimestamp();
+
+    void printVector();
 
     void readcsv(const std::string &file);
 
     void run();
 
     ~Datasource();
-
-private:
-
-    std::vector<Line *> *csvArgs;
-    std::string destIP;
-
-    int clock;
-    std::queue<queueLine*> *queue;
-public:
-
 
     std::vector<Line *> *getCsvArgs() const;
 
@@ -57,15 +60,15 @@ public:
     const std::string &getTopic() const;
 
     void requestToEnter();
-    void allowToEnter();
-    void release();
-    bool allowedToEnter();
-    void receive();
 
-private:
-    std::string id;
-    std::string mqttName;
-    std::string topic;
+    void allowToEnter(std::string requester);
+
+    void release();
+
+    bool allowedToEnter();
+
+    void receive(std::string recMessage);
+
 
 };
 
