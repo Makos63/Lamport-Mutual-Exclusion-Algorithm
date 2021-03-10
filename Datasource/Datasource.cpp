@@ -45,8 +45,8 @@ int main(int argc, char *argv[]) {
     myDatasource = new Datasource(destIP, id, topic, sourceCount);
     myDatasource->readcsv(file);
 //    myDatasource->run();
-    std::thread pubThread(&Datasource::run, myDatasource);
     std::thread subThread(subscriber);
+    std::thread pubThread(&Datasource::run, myDatasource);
 
 
     pubThread.join();
@@ -104,12 +104,12 @@ void Datasource::run() {
     try {
 
         std::cout << "publisher thread: " << mqttName << " with Topic: " << topic << std::endl;
-        sleep(std::stoi(id));
+        //sleep(std::stoi(id));
         for (int i = 5; i > 0; i--) {
             std::cout << "starting in: " << i << std::endl;
             sleep(1);
         }
-        int doneWith = 0;
+        int static doneWith = 0;
         for (int i = 0; i < csvArgs->size(); i++) {
             std::cout << "----------------new request------------------" << std::endl;
 
@@ -123,9 +123,7 @@ void Datasource::run() {
             bool isItDone = false;
 
             while (!isItDone) {
-                /*if(ackCounter!=3){
-                    requestToEnter();
-                }*/
+
                 sleep(1);
                 if (allowedToEnter()) {
                     /*send to datastore
@@ -250,6 +248,7 @@ Datasource::~Datasource() {
 }
 
 void Datasource::requestToEnter() {
+    sleep(1);
     g_mutex.try_lock();
     std::cout << "Sending broadcast REQ" << std::endl;
     ++clock;
@@ -265,6 +264,7 @@ void Datasource::requestToEnter() {
 }
 
 void Datasource::allowToEnter(std::string requester) {
+    sleep(1);
     g_mutex.try_lock();
     //std::cout << "Sending ACK to: " << requester << std::endl;
     ++clock;
@@ -276,6 +276,7 @@ void Datasource::allowToEnter(std::string requester) {
 }
 
 void Datasource::release() {
+    sleep(1);
     //std::cout << "Sending REL" << std::endl;
     g_mutex.try_lock();
     ++clock;
@@ -287,12 +288,12 @@ void Datasource::release() {
 }
 
 bool Datasource::allowedToEnter() {
-
+    sleep(1);
     g_mutex.try_lock();
     auto t = queue[0].front();
     if (t->process == mqttName && ackCounter == sourceCount) {
-        std::cout << "i am allowed to enter" << std::endl;
         ackCounter = 0;
+        std::cout << "i am allowed to enter" << std::endl;
         g_mutex.unlock();
         return true;
     }
@@ -305,6 +306,7 @@ bool Datasource::allowedToEnter() {
 
 void Datasource::receive(std::string recMessage) {
     //PROCCLOCK|PROCID|EVENTTYP|REQUESTER
+
     std::string clockStr, procId, event, destOpt, rel;
     std::istringstream iss(recMessage);
     getline(iss, clockStr, '|');
@@ -316,9 +318,10 @@ void Datasource::receive(std::string recMessage) {
     if (event == "REL") {
         getline(iss, rel, '|');
     }
+    //g_mutex.try_lock();
     auto t = std::max(clock, std::stoi(clockStr));
     clock = t + 1;
-    g_mutex.try_lock();
+
 
     if (event == "REQ") {
 
@@ -329,11 +332,15 @@ void Datasource::receive(std::string recMessage) {
         allowToEnter(procId);
         ++messCounter;
         printVector();
-    } else if (event == "ACK" && destOpt==id) {
-        std::cout << "Got ACK for me! incrementing clock" << std::endl;
-        ++ackCounter;
-        ++messCounter;
-        printVector();
+    } else if (event == "ACK") {
+        if ( destOpt==id){
+            std::cout << "Got ACK for me! incrementing clock" << std::endl;
+            ++ackCounter;
+            ++messCounter;
+            printVector();
+        }
+        std::cout << "Ignored this ACK. its not for me" << std::endl;
+
 
     } else if (event == "REL") {
         if (queue->at(0)->process == rel) {
@@ -356,7 +363,7 @@ void Datasource::receive(std::string recMessage) {
     }else{
         std::cout<< "nothing to sort.."<<std::endl;
     }
-    g_mutex.unlock();
+    //g_mutex.unlock();
 }
 
 void Datasource::printVector() {
@@ -441,7 +448,7 @@ void publish(std::string mess) {
         throw "Client could not connect to broker!";
     }
 
-    mosquitto_publish(mosq, NULL, myDatasource->getTopic().c_str(), mess.length(), mess.c_str(), 0, false);
+    mosquitto_publish(mosq, NULL, myDatasource->getTopic().c_str(), mess.length(), mess.c_str(), 1, false);
     mosquitto_disconnect(mosq);
     mosquitto_destroy(mosq);
 
