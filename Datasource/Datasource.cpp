@@ -130,7 +130,7 @@ void Datasource::run() {
 
                 sleep(1);
                 if (allowedToEnter()) {
-                    Reply myReply = myClient->storeData(id, std::to_string(currentLine->fileSize), std::to_string(currentLine->fileSize), "hey some message");
+                    Reply myReply = myClient->storeData("1", "Message of size: "+std::to_string(currentLine->fileSize), std::to_string(currentLine->fileSize), "Message from: "+ id);
 
                     std::cout<< "Status: "<<myReply.status() <<"|Description: "<<myReply.description()<<std::endl;
 
@@ -144,64 +144,6 @@ void Datasource::run() {
             std::cout << "finished request count:" << doneWith << "..." << std::endl;
             ++doneWith;
         }
-        /*loop some more
-        std::cout << "loop some more: 2nd" << std::endl;
-        for (int i = 0; i < csvArgs->size(); i++) {
-            std::cout << "----------------new request------------------" << std::endl;
-
-            Line *currentLine = csvArgs->at(i);
-
-            sleep(currentLine->sleepTime);
-            printVector();
-
-            requestToEnter();
-
-            bool isItDone = false;
-
-            while (!isItDone) {
-
-                sleep(1);
-                if (allowedToEnter()) {
-
-                    isItDone = true;
-                    release();
-                    printVector();
-                }
-
-            }
-
-            std::cout << "finished request count:" << doneWith << "..." << std::endl;
-            ++doneWith;
-        }
-        std::cout << "loop some more: 3nd" << std::endl;
-        for (int i = 0; i < csvArgs->size(); i++) {
-            std::cout << "----------------new request------------------" << std::endl;
-
-            Line *currentLine = csvArgs->at(i);
-
-            sleep(currentLine->sleepTime);
-            printVector();
-
-            requestToEnter();
-
-            bool isItDone = false;
-
-            while (!isItDone) {
-
-                sleep(1);
-                if (allowedToEnter()) {
-
-                    isItDone = true;
-                    release();
-                    printVector();
-                }
-
-            }
-
-            std::cout << "finished request count:" << doneWith << "..." << std::endl;
-            ++doneWith;
-        }
-        std::cout << "done with looping" << std::endl;*/
     } catch (char const *c) {
         std::cout << "failed with: " << std::endl;
         std::cout << c << std::endl;
