@@ -20,7 +20,7 @@ services:
       DesIP: 172.20.0.110
       Csv: config.csv
       id: 1
-      sourceCount: 3
+      sourceCount: 5
     networks:
       myNetwork:
         ipv4_address: 172.20.0.150
@@ -34,7 +34,7 @@ services:
       DesIP: 172.20.0.110
       Csv: config.csv
       id: 2
-      sourceCount: 3
+      sourceCount: 5
     networks:
       myNetwork:
         ipv4_address: 172.20.0.151
@@ -48,12 +48,44 @@ services:
       DesIP: 172.20.0.110
       Csv: config.csv
       id: 3
-      sourceCount: 3
+      sourceCount: 5
     networks:
       myNetwork:
         ipv4_address: 172.20.0.152
     depends_on:
       - mosquitto
+  ds4:
+    build:
+      context: Datasource
+      dockerfile: dockerDatasource
+    environment:
+      DesIP: 172.20.0.110
+      Csv: config.csv
+      id: 4
+      sourceCount: 5
+    networks:
+      myNetwork:
+        ipv4_address: 172.20.0.153
+    depends_on:
+      - mosquitto
+
+  ds5:
+    build:
+      context: Datasource
+      dockerfile: dockerDatasource
+    environment:
+      DesIP: 172.20.0.110
+      Csv: config.csv
+      id: 5
+      sourceCount: 5
+    networks:
+      myNetwork:
+        ipv4_address: 172.20.0.154
+    depends_on:
+      - mosquitto
+
+
+
 
   datastore:
     image: mbredel/datastore:krzyszton

@@ -32,3 +32,7 @@ ctrl+c
 2. replace X new id is; 
 3. replace Y (also others by Datasources) the sourceCount to count of all Datasources
 4. replace Z with free ip address from network 172.20.0.0/22
+
+
+**To adjust number of Datasources(fast):**
+You may also second compose file with 5 Datasources
