@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package service;
+package dataproto;
 
 /*
  * The resource that is stored at the
