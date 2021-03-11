@@ -29,8 +29,7 @@ struct mosquitto *mosqSUB;
 
 int main(int argc, char *argv[]) {
     std::string destIP, file, id, sourceCount;
-    //sleep(10);
-    std::cout << "lets go!@" << std::endl;
+    std::cout << "lets go!" << std::endl;
 
     srand(time(NULL) + 1000 * getpid());
 
@@ -38,13 +37,12 @@ int main(int argc, char *argv[]) {
     file = argv[2];
     id = argv[3];
     sourceCount = argv[4];
-    std::cout << "destIP: " << destIP << std::endl;
 
     std::string topic = "t/Lamports";
 
     myDatasource = new Datasource(destIP, id, topic, sourceCount);
     myDatasource->readcsv(file);
-//    myDatasource->run();
+
     std::thread subThread(subscriber);
     std::thread pubThread(&Datasource::run, myDatasource);
 
@@ -53,11 +51,7 @@ int main(int argc, char *argv[]) {
     subThread.join();
 }
 
-std::string Datasource::getCurrentTimestamp() {
-    std::time_t result = std::time(nullptr);
-    //std::cout << std::asctime(std::localtime(&result)) << result << " seconds since the Epoch\n";
-    return reinterpret_cast<const char *>(result);
-}
+
 
 void Datasource::readcsv(const std::string &file) {
 
@@ -108,7 +102,6 @@ Datasource::Datasource(std::string destIPn, std::string idn, std::string topicn,
 void Datasource::run() {
     try {
         std::cout << "publisher thread: " << mqttName << " with Topic: " << topic << std::endl;
-        //sleep(std::stoi(id));
         for (int i = 5; i > 0; i--) {
             std::cout << "starting in: " << i << std::endl;
             sleep(1);
@@ -128,11 +121,11 @@ void Datasource::run() {
 
             while (!isItDone) {
 
-                sleep(1);
+                //sleep(1);
                 if (allowedToEnter()) {
                     Reply myReply = myClient->storeData("1", "Message of size: "+std::to_string(currentLine->fileSize), std::to_string(currentLine->fileSize), "Message from: "+ id);
 
-                    std::cout<< "Status: "<<myReply.status() <<"|Description: "<<myReply.description()<<std::endl;
+                    std::cout<< "Status: "<<myReply.status() <<"| Description: "<<myReply.description()<<std::endl;
 
                     isItDone = true;
                     release();
@@ -141,7 +134,7 @@ void Datasource::run() {
 
             }
 
-            std::cout << "finished request count:" << doneWith << "..." << std::endl;
+            std::cout << "finished request count: " << doneWith << "" << std::endl;
             ++doneWith;
         }
     } catch (char const *c) {
@@ -180,39 +173,28 @@ Datasource::~Datasource() {
 }
 
 void Datasource::requestToEnter() {
-    sleep(1);
     g_mutex.try_lock();
     std::cout << "Sending broadcast REQ" << std::endl;
     ++clock;
 
-    /*queueLine *ql = new queueLine();
-    ql->clock = clock;
-    ql->process = mqttName;
-    queue->push_back(ql);
-    */
     std::string message = std::to_string(clock) + "|" + id + "|" + "REQ" + "|";
     publish(message);
     g_mutex.unlock();
 }
 
 void Datasource::allowToEnter(std::string requester) {
-    sleep(1);
+
     g_mutex.try_lock();
-    //std::cout << "Sending ACK to: " << requester << std::endl;
     ++clock;
     std::string message =
             std::to_string(queue->front()->clock) + "|" + queue->front()->process + "|" + "ACK" + "|" + requester + "|";
     publish(message);
-    //std::cout << "published ACK to: " << requester << std::endl;
     g_mutex.unlock();
 }
 
 void Datasource::release() {
-    sleep(1);
-    //std::cout << "Sending REL" << std::endl;
     g_mutex.try_lock();
     ++clock;
-    //ackCounter = 0;
     std::string message =
             std::to_string(queue->front()->clock) + "|" + queue->front()->process + "|" + "REL" + "|" + id + "|";
     publish(message);
@@ -220,7 +202,6 @@ void Datasource::release() {
 }
 
 bool Datasource::allowedToEnter() {
-    sleep(1);
     g_mutex.try_lock();
     auto t = queue[0].front();
     if (t->process == mqttName && ackCounter == sourceCount) {
@@ -295,7 +276,6 @@ void Datasource::receive(std::string recMessage) {
     } else {
         std::cout << "nothing to sort.." << std::endl;
     }
-    //g_mutex.unlock();
 }
 
 void Datasource::printVector() {
@@ -321,26 +301,21 @@ void on_message(struct mosquitto *mosqSUB, void *obj, const struct mosquitto_mes
 
 }
 
-//test for connection and connect, if successful
 void on_connect(struct mosquitto *mosqtttest, void *obj, int rcttest) {
     std::cout << "on_connect called" << std::endl;
-    //std::cout << "ID: " << *(int *) obj << std::endl;
     if (rcttest != 0) {
         std::cout << "Conenction to broker failed" << std::endl;
         exit(-1);
     }
-    //clientobj, messageid, topic, quality for service level
     mosquitto_subscribe(mosqtttest, NULL, myDatasource->getTopic().c_str(), 0);
 }
 
 
 void subscriber() {
-    //int rc, id = std::stoi(myDatasource->getId());
     std::string brokerIP = myDatasource->getDestIp();
     int id = std::stoi(myDatasource->getId());
     std::cout << "starting subscriber thread: " << myDatasource->getMqttName() << " with Topic: "
               << myDatasource->getTopic() << std::endl;
-    //mosquitto_lib_init();
     mosquitto_lib_init();
     std::string tmp = "sub-" + myDatasource->getId();
     mosqSUB = mosquitto_new(tmp.c_str(), true, &id);
@@ -354,10 +329,8 @@ void subscriber() {
         throw "Could not connect to Broker";
     }
 
-    //loop for listening
     mosquitto_loop_start(mosqSUB);
-    printf("Press Enter to quit...\n");
-    //quit loop with force or not
+    printf("Thread is running...\n");
     mosquitto_loop_stop(mosqSUB, false);
 
     mosquitto_disconnect(mosqSUB);
@@ -374,7 +347,6 @@ void publish(std::string mess) {
     mosq = mosquitto_new(tmp.c_str(), true, NULL);
 
     rc = mosquitto_connect(mosq, myDatasource->getDestIp().c_str(), 1883, 10);
-    //check if connection is successful. if so = 0, if not !=0
     if (rc != 0) {
         mosquitto_destroy(mosq);
         throw "Client could not connect to broker!";
