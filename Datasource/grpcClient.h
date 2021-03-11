@@ -8,7 +8,6 @@
 #include <string>
 
 #include <grpcpp/grpcpp.h>
-#include <service.pb.h>
 #include "dataproto.grpc.pb.h"
 
 using grpc::Channel;
