@@ -12,7 +12,7 @@ ctrl+c
 ```
 
 **To adjust number of Datasources:**
-1. Add in docker-compose file:
+1. Add or delete in docker-compose file:
 ``` 
  dsX:
      build:
