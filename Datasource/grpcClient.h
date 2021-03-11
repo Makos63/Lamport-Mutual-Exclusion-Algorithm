@@ -8,22 +8,23 @@
 #include <string>
 
 #include <grpcpp/grpcpp.h>
-#include "dataproto.grpc.pb.h"
-
+#include <service.pb.h>
+//#include "dataproto.grpc.pb.h"
+#include "service.grpc.pb.h"
 using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
 
-using dataproto::Resource;
-using dataproto::ResourceRequest;
-using dataproto::ResourcesRequest;
-using dataproto::Reply;
-using dataproto::HealthCheckRequest;
+using service::Resource;
+using service::ResourceRequest;
+using service::ResourcesRequest;
+using service::Reply;
+using service::HealthCheckRequest;
 
 
 class GrpcClient {
 public:
-    GrpcClient(std::shared_ptr<Channel> channel) : stub_(dataproto::Service1::NewStub(channel)){};
+    GrpcClient(std::shared_ptr<Channel> channel) : stub_(service::Service1::NewStub(channel)){};
 
     Reply storeData(std::string id, std::string name,
                      std::string messSize,std::string messDesc) {
@@ -51,12 +52,12 @@ public:
     }
 
 
-    const std::unique_ptr<dataproto::Service1::Stub> &getStub() const {
+    const std::unique_ptr<service::Service1::Stub> &getStub() const {
         return stub_;
     }
 
 private:
-    std::unique_ptr<dataproto::Service1::Stub> stub_;
+    std::unique_ptr<service::Service1::Stub> stub_;
 };
 
 
