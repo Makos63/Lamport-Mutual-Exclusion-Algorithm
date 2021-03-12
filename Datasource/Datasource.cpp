@@ -180,6 +180,7 @@ void Datasource::requestToEnter() {
     std::string message = std::to_string(clock) + "|" + id + "|" + "REQ" + "|";
     publish(message);
     g_mutex.unlock();
+    sleep(1);
 }
 
 void Datasource::allowToEnter(std::string requester) {
