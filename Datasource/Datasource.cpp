@@ -121,7 +121,7 @@ void Datasource::run() {
 
             while (!isItDone) {
 
-                //sleep(1);
+
                 if (allowedToEnter()) {
                     Reply myReply = myClient->storeData("1", "Message of size: "+std::to_string(currentLine->fileSize), std::to_string(currentLine->fileSize), "Message from: "+ id);
 
@@ -131,7 +131,7 @@ void Datasource::run() {
                     release();
                     printVector();
                 }
-
+                sleep(1);
             }
 
             std::cout << "finished request count: " << doneWith << "" << std::endl;
@@ -190,6 +190,7 @@ void Datasource::allowToEnter(std::string requester) {
             std::to_string(queue->front()->clock) + "|" + queue->front()->process + "|" + "ACK" + "|" + requester + "|";
     publish(message);
     g_mutex.unlock();
+    sleep(1);
 }
 
 void Datasource::release() {
@@ -199,6 +200,7 @@ void Datasource::release() {
             std::to_string(queue->front()->clock) + "|" + queue->front()->process + "|" + "REL" + "|" + id + "|";
     publish(message);
     g_mutex.unlock();
+    sleep(1);
 }
 
 bool Datasource::allowedToEnter() {
