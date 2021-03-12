@@ -18,6 +18,7 @@ services:
       dockerfile: dockerDatasource
     environment:
       DesIP: 172.20.0.110
+      GrpcDest: 172.20.0.10
       Csv: config.csv
       id: 1
       sourceCount: 3
@@ -32,6 +33,7 @@ services:
       dockerfile: dockerDatasource
     environment:
       DesIP: 172.20.0.110
+      GrpcDest: 172.20.0.10
       Csv: config.csv
       id: 2
       sourceCount: 3
@@ -46,6 +48,7 @@ services:
       dockerfile: dockerDatasource
     environment:
       DesIP: 172.20.0.110
+      GrpcDest: 172.20.0.10
       Csv: config.csv
       id: 3
       sourceCount: 3

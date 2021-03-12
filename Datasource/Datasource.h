@@ -43,7 +43,7 @@ private:
 public:
     Datasource();
 
-    Datasource(std::string destIPn, std::string idn, std::string topicn,std::string count);
+    Datasource(std::string destIPn, std::string idn, std::string topicn,std::string count,std::string grpcDest);
 
     std::string getCurrentTimestamp();
 

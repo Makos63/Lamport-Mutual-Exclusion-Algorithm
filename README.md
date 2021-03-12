@@ -19,7 +19,8 @@ ctrl+c
        context: Datasource
        dockerfile: dockerDatasource
      environment:
-       DesIP: 172.20.0.110
+       DesIP: IPMosquitto
+       GrpcDest: IPDatastore
        Csv: config.csv
        id: X
        sourceCount: Y

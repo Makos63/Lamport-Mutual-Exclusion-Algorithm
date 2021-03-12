@@ -3,6 +3,7 @@ ENV DesIP "$DesIP"
 ENV Csv "$Csv"
 ENV id "$id"
 ENV sourceCount "$sourceCount"
+ENV GrpcDest "$GrpcDest"
 RUN apt-get update && apt-get upgrade -y && apt-get install cmake -y
 
 RUN apt-get install --reinstall pkg-config cmake-data -y
@@ -15,4 +16,4 @@ RUN cmake .
 RUN make
 
 
-CMD ./Datasource $DesIP $Csv $id $sourceCount
+CMD ./Datasource $DesIP $Csv $id $sourceCount $GrpcDest

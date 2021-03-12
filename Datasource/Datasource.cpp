@@ -28,7 +28,7 @@ struct mosquitto *mosqSUB;
 
 
 int main(int argc, char *argv[]) {
-    std::string destIP, file, id, sourceCount;
+    std::string destIP, file, id, sourceCount, grpcDest;
     std::cout << "lets go!" << std::endl;
 
     srand(time(NULL) + 1000 * getpid());
@@ -37,10 +37,11 @@ int main(int argc, char *argv[]) {
     file = argv[2];
     id = argv[3];
     sourceCount = argv[4];
+    grpcDest = argv[5];
 
     std::string topic = "t/Lamports";
 
-    myDatasource = new Datasource(destIP, id, topic, sourceCount);
+    myDatasource = new Datasource(destIP, id, topic, sourceCount, grpcDest);
     myDatasource->readcsv(file);
 
     std::thread subThread(subscriber);
@@ -50,7 +51,6 @@ int main(int argc, char *argv[]) {
     pubThread.join();
     subThread.join();
 }
-
 
 
 void Datasource::readcsv(const std::string &file) {
@@ -79,7 +79,8 @@ void Datasource::readcsv(const std::string &file) {
     }
 }
 
-Datasource::Datasource(std::string destIPn, std::string idn, std::string topicn, std::string count) {
+Datasource::Datasource(std::string destIPn, std::string idn, std::string topicn, std::string count,
+                       std::string grpcDest) {
     csvArgs = new std::vector<Line *>;
     destIP = std::move(destIPn);
     id = std::move(idn);
@@ -90,9 +91,10 @@ Datasource::Datasource(std::string destIPn, std::string idn, std::string topicn,
     clock = 0;
     ackCounter = 0;
     sourceCount = std::stoi(count);
+    grpcDest += ":8080";
     myClient = new GrpcClient(
             grpc::CreateChannel(
-                    "172.20.0.10:8080",
+                    grpcDest,
                     grpc::InsecureChannelCredentials()
             )
     );
@@ -123,9 +125,12 @@ void Datasource::run() {
 
 
                 if (allowedToEnter()) {
-                    Reply myReply = myClient->storeData("1", "Message of size: "+std::to_string(currentLine->fileSize), std::to_string(currentLine->fileSize), "Message from: "+ id);
+                    Reply myReply = myClient->storeData("1",
+                                                        "Message of size: " + std::to_string(currentLine->fileSize),
+                                                        std::to_string(currentLine->fileSize), "Message from: " + id);
 
-                    std::cout<< "Status: "<<myReply.status() <<"| Description: "<<myReply.description()<<std::endl;
+                    std::cout << "Status: " << myReply.status() << "| Description: " << myReply.description()
+                              << std::endl;
 
                     isItDone = true;
                     release();
@@ -137,6 +142,7 @@ void Datasource::run() {
             std::cout << "finished request count: " << doneWith << "" << std::endl;
             ++doneWith;
         }
+
     } catch (char const *c) {
         std::cout << "failed with: " << std::endl;
         std::cout << c << std::endl;
