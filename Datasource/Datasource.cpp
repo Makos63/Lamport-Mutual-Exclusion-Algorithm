@@ -288,7 +288,6 @@ void Datasource::printVector() {
     }
     std::cout << "Current clock: " << clock << std::endl;
     std::cout << "Current ACK count: " << ackCounter << std::endl;
-    std::cout << "Current message counter: " << messCounter << std::endl;
     std::cout << "Current 3*(N-1): " << messCounter - (3 * 1) << std::endl;
 
 
