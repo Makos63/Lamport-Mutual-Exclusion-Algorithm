@@ -37,3 +37,18 @@ ctrl+c
 
 **To adjust number of Datasources(fast):**
 You may also second compose file with 5 Datasources
+
+
+
+
+
+
+
+
+
+
+
+
+**Informationen zu Rahmenbedingungen**
+Exam was written within following time Constrains 08.03.2021 (8:00 Uhr) till 12.03.2021 (23:59)
+More informations in 2020_ws_exam_met.pdf
