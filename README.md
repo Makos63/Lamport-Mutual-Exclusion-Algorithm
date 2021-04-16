@@ -50,5 +50,19 @@ You may also second compose file with 5 Datasources
 
 
 **Informations about project constrains**
-Exam was written within following time Constrains 08.03.2021 (8:00 Uhr) till 12.03.2021 (23:59), code passed the requierments.
-More informations in 2020_ws_exam_met.pdf
+Exam was written within following time Constrains 08.03.2021 (8:00) till 12.03.2021 (23:59), code passed the requirements.
+
+
+The main task was to implement Lamport's mutual exclusion algorithm for database access. The database access was possible only with Thrift, gRPC or TCP with Protobuf. Other requirements were: horizontal scalability for more than three datasources which produce data and try to save it and automated docker deployment. 
+
+Used communication technologies:
+- gRPC (C++) for contact with datastore
+- Eclipse Mosquitto (C++) for Lamports alg. implementation
+
+
+This solution's problems are: (1) race condition which was not solved in given time constrains, however it fulfills acceptance exam criteria, (2) lack of refactoring which was not quite possible with old Eclipse Mosquitto which is not further developed.
+
+
+
+
+Detailed informations in 2020_ws_exam_met.pdf
