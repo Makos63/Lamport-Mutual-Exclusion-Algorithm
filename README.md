@@ -74,4 +74,5 @@ This solution's problems are: (1) race condition which was not solved in given t
 
 
 Detailed informations in 2020_ws_exam_met.pdf
+
 Solution is inspired by: M. van Steen and A.S. Tanenbaum, Distributed Systems, 3rd ed.
