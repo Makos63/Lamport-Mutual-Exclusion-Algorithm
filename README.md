@@ -49,6 +49,6 @@ You may also second compose file with 5 Datasources
 
 
 
-**Informationen zu Rahmenbedingungen**
-Exam was written within following time Constrains 08.03.2021 (8:00 Uhr) till 12.03.2021 (23:59)
+**Informations about project constrains**
+Exam was written within following time Constrains 08.03.2021 (8:00 Uhr) till 12.03.2021 (23:59), code passed the requierments.
 More informations in 2020_ws_exam_met.pdf
